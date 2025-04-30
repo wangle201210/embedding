@@ -12,15 +12,22 @@ tokenizer = model.tokenizer
 def encode_text():
     # 获取请求数据
     data = request.get_json()
-    if not data or 'text' not in data:
-        return jsonify({'error': '请提供文本参数'}), 400
+    if not data or 'texts' not in data:
+        return jsonify({'error': '请提供texts参数（字符串数组）'}), 400
     
-    text = data['text']
+    texts = data['texts']
+    if not isinstance(texts, list):
+        return jsonify({'error': 'texts参数必须是字符串数组'}), 400
+    if not texts:
+        return jsonify({'error': 'texts数组不能为空'}), 400
+    if not all(isinstance(text, str) for text in texts):
+        return jsonify({'error': 'texts数组的所有元素必须是字符串'}), 400
+    
     return_dense = data.get('return_dense', True)
     return_sparse = data.get('return_sparse', True)
     
-    # 编码文本（获取稠密向量和稀疏向量）
-    output = model.encode(text, return_dense=return_dense, return_sparse=return_sparse, convert_to_numpy=True)
+    # 使用encode方法进行文本编码（获取稠密向量和稀疏向量）
+    output = model.encode(texts, return_dense=return_dense, return_sparse=return_sparse, convert_to_numpy=True)
 
     # 构建响应
     response = {
@@ -32,28 +39,33 @@ def encode_text():
     
     # 处理稠密向量
     if return_dense and 'dense_vecs' in output:
-        dense_embedding = output['dense_vecs'].tolist() if hasattr(output['dense_vecs'], 'tolist') else output['dense_vecs']
-        response['dense_embedding'] = dense_embedding
+        dense_embeddings = []
+        for vec in output['dense_vecs']:
+            dense_embeddings.append(vec.tolist() if hasattr(vec, 'tolist') else vec)
+        response['dense_embeddings'] = dense_embeddings
     
     # 处理稀疏向量
     if return_sparse and 'lexical_weights' in output:
-        sparse_embedding = {}
-        # 获取原始token_id和权重
-        sparse_raw = {}
-        for token_id, weight in output['lexical_weights'].items():
-            sparse_raw[str(token_id)] = float(weight)
-        
-        # 获取可读的token和权重
-        sparse_readable = {}
-        for token_id, weight in output['lexical_weights'].items():
-            token = tokenizer.convert_ids_to_tokens(int(token_id))
-            sparse_readable[token] = float(weight)
-        
-        sparse_embedding = {
-            'raw': sparse_raw,
-            'readable': sparse_readable
-        }
-        response['sparse_embedding'] = sparse_embedding
+        sparse_embeddings = []
+        for weights in output['lexical_weights']:
+            sparse_embedding = {}
+            # 获取原始token_id和权重
+            sparse_raw = {}
+            for token_id, weight in weights.items():
+                sparse_raw[str(token_id)] = float(weight)
+            
+            # 获取可读的token和权重
+            sparse_readable = {}
+            for token_id, weight in weights.items():
+                token = tokenizer.convert_ids_to_tokens(int(token_id))
+                sparse_readable[token] = float(weight)
+            
+            sparse_embedding = {
+                'raw': sparse_raw,
+                'readable': sparse_readable
+            }
+            sparse_embeddings.append(sparse_embedding)
+        response['sparse_embeddings'] = sparse_embeddings
     
     return jsonify(response)
 
