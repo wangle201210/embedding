@@ -25,16 +25,22 @@ python main.py
 - **请求体**:
   ```json
   {
-    "text": "需要向量化的文本"
+    "text": "需要向量化的文本",
+    "return_dense": true,  // 可选，是否返回稠密向量，默认为true
+    "return_sparse": true  // 可选，是否返回稀疏向量，默认为true
   }
   ```
 - **响应**:
   ```json
   {
-    "dense_embedding": [...],  // 稠密向量
-    "sparse_embedding": {
+    "dense_embedding": [...],  // 稠密向量（当return_dense=true时返回）
+    "sparse_embedding": {      // 稀疏向量（当return_sparse=true时返回）
       "raw": {"token_id": weight, ...},  // 原始token_id和权重
       "readable": {"token": weight, ...}  // 可读的token和权重
+    },
+    "model_info": {
+      "name": "BAAI/bge-m3",
+      "type": "hybrid_embedding"
     }
   }
   ```

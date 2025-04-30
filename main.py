@@ -16,17 +16,28 @@ def encode_text():
         return jsonify({'error': '请提供文本参数'}), 400
     
     text = data['text']
+    return_dense = data.get('return_dense', True)
+    return_sparse = data.get('return_sparse', True)
     
     # 编码文本（获取稠密向量和稀疏向量）
-    output = model.encode(text, return_dense=True, return_sparse=True, convert_to_numpy=True)
+    output = model.encode(text, return_dense=return_dense, return_sparse=return_sparse, convert_to_numpy=True)
 
-    # 处理输出结果
+    # 构建响应
+    response = {
+        'model_info': {
+            'name': 'BAAI/bge-m3',
+            'type': 'hybrid_embedding'
+        }
+    }
+    
     # 处理稠密向量
-    dense_embedding = output['dense_vecs'].tolist() if hasattr(output['dense_vecs'], 'tolist') else output['dense_vecs']
+    if return_dense and 'dense_vecs' in output:
+        dense_embedding = output['dense_vecs'].tolist() if hasattr(output['dense_vecs'], 'tolist') else output['dense_vecs']
+        response['dense_embedding'] = dense_embedding
     
     # 处理稀疏向量
-    sparse_embedding = {}
-    if 'lexical_weights' in output:
+    if return_sparse and 'lexical_weights' in output:
+        sparse_embedding = {}
         # 获取原始token_id和权重
         sparse_raw = {}
         for token_id, weight in output['lexical_weights'].items():
@@ -42,16 +53,7 @@ def encode_text():
             'raw': sparse_raw,
             'readable': sparse_readable
         }
-    
-    # 构建响应
-    response = {
-        'dense_embedding': dense_embedding,  # 转换为列表以便JSON序列化
-        'sparse_embedding': sparse_embedding,
-        'model_info': {
-            'name': 'BAAI/bge-m3',
-            'type': 'hybrid_embedding'
-        }
-    }
+        response['sparse_embedding'] = sparse_embedding
     
     return jsonify(response)
 

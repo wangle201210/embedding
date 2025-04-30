@@ -20,6 +20,9 @@ fi
 # 激活虚拟环境
 source .venv/bin/activate
 
+export HF_ENDPOINT="https://hf-mirror.com"
+
+
 # 安装依赖
 echo "安装项目依赖..."
 pip install -r requirements.txt
@@ -32,12 +35,12 @@ if ! python3 -c "from huggingface_hub.hf_api import HfApi; HfApi().whoami()" > /
     exit 1
 fi
 
-# 检查模型下载
-echo "验证模型下载..."
-if ! python3 -c "from transformers import AutoModel; AutoModel.from_pretrained('BAAI/bge-m3')" > /dev/null 2>&1; then
-    echo "错误: 无法下载或访问BAAI/bge-m3模型，请检查网络连接和HuggingFace登录状态"
-    exit 1
-fi
+## 检查模型下载
+#echo "验证模型下载..."
+#if ! python3 -c "from transformers import AutoModel; AutoModel.from_pretrained('BAAI/bge-m3')" > /dev/null 2>&1; then
+#    echo "错误: 无法下载或访问BAAI/bge-m3模型，请检查网络连接和HuggingFace登录状态"
+#    exit 1
+#fi
 
 # 启动服务
 echo "启动文本向量化服务..."
